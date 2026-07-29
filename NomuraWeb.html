@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>NUMORA — BLE Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+
+/* ── DARK ── */
+:root{
+  --bg:#0A0A0F; --panel:#111118; --panel2:#18181F;
+  --border:rgba(255,255,255,.07); --border2:rgba(255,255,255,.12);
+  --txt:#F0F0FF; --muted:#6B6B8A; --muted2:#9191B0;
+  --shadow:rgba(0,0,0,.4); --header-bg:rgba(10,10,15,.88);
+  --red:#FF4455; --red-g:rgba(255,68,85,.12); --red-b:rgba(255,68,85,.25);
+  --grn:#00E599; --grn-g:rgba(0,229,153,.12); --grn-b:rgba(0,229,153,.25);
+  --blu:#3B82F6; --blu-g:rgba(59,130,246,.12); --blu-b:rgba(59,130,246,.25);
+  --yel:#FFD600; --yel-g:rgba(255,214,0,.12); --yel-b:rgba(255,214,0,.25);
+  --pur:#A855F7; --pur-g:rgba(168,85,247,.12); --pur-b:rgba(168,85,247,.25);
+  --ora:#FF7A00;
+  --ble:#00BFFF; --ble-g:rgba(0,191,255,.12); --ble-b:rgba(0,191,255,.25);
+  --ff-h:'Syne',sans-serif; --ff-b:'DM Sans',sans-serif; --ff-m:'Space Mono',monospace;
+}
+
+/* ── LIGHT ── */
+body.light{
+  --bg:#F2F2F8; --panel:#FFFFFF; --panel2:#E8E8F0;
+  --border:rgba(0,0,0,.07); --border2:rgba(0,0,0,.13);
+  --txt:#12121A; --muted:#888899; --muted2:#444455;
+  --shadow:rgba(0,0,0,.10); --header-bg:rgba(242,242,248,.95);
+  --red:#D42035; --red-g:rgba(212,32,53,.08); --red-b:rgba(212,32,53,.2);
+  --grn:#059669; --grn-g:rgba(5,150,105,.08); --grn-b:rgba(5,150,105,.2);
+  --blu:#2563EB; --blu-g:rgba(37,99,235,.08); --blu-b:rgba(37,99,235,.2);
+  --yel:#92650A; --yel-g:rgba(146,101,10,.08); --yel-b:rgba(146,101,10,.2);
+  --pur:#6D28D9; --pur-g:rgba(109,40,217,.08); --pur-b:rgba(109,40,217,.2);
+  --ble:#007BB5; --ble-g:rgba(0,123,181,.08); --ble-b:rgba(0,123,181,.2);
+}
+
+body,body *{transition:background-color .3s,border-color .3s,color .2s,box-shadow .3s}
+body .confetti-piece,body [style*="animation"]{transition:none!important}
+
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--ff-b);background:var(--bg);color:var(--txt);display:flex;flex-direction:column}
+body.light .scanline{display:none}
+body.light::before{opacity:.12}
+
+body::before{content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity:.4;pointer-events:none;z-index:0}
+.scanline{position:fixed;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(transparent,rgba(255,255,255,.03),transparent);
+  animation:scanline 8s linear infinite;pointer-events:none;z-index:1}
+
+@keyframes scanline{0%{transform:translateY(-100%)}100%{transform:translateY(100vh)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes popIn{0%{transform:scale(.5);opacity:0}60%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes glow{0%,100%{box-shadow:0 0 8px var(--grn)}50%{box-shadow:0 0 22px var(--grn),0 0 40px var(--grn-g)}}
+@keyframes bleGlow{0%,100%{box-shadow:0 0 8px var(--ble)}50%{box-shadow:0 0 22px var(--ble),0 0 40px var(--ble-g)}}
+@keyframes confettiDrop{0%{transform:translateY(-20px) rotate(0);opacity:1}100%{transform:translateY(320px) rotate(720deg);opacity:0}}
+@keyframes bounce{0%,100%{transform:scale(1) translateY(0)}30%{transform:scale(1.14) translateY(-7px)}60%{transform:scale(.96) translateY(2px)}}
+@keyframes slideRight{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes ripple{0%{transform:scale(1);opacity:.6}100%{transform:scale(2.4);opacity:0}}
+
+.pg{display:none;flex:1;flex-direction:column;animation:fadeIn .3s;position:relative;z-index:2;overflow:hidden}
+.pg.on{display:flex}
+
+#pg-login{align-items:center;justify-content:center;padding:20px;
+  background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(168,85,247,.14),transparent 70%)}
+.login-card{width:100%;max-width:400px;animation:fadeUp .45s ease}
+.login-logo{width:76px;height:76px;border-radius:22px;
+  background:linear-gradient(135deg,var(--pur),#6366F1);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 18px;
+  box-shadow:0 0 36px rgba(168,85,247,.35);font-size:34px}
+.login-h1{font-family:var(--ff-h);font-size:34px;font-weight:800;text-align:center;
+  background:linear-gradient(135deg,#fff 30%,var(--pur));-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;background-clip:text;margin-bottom:5px}
+body.light .login-h1{background:linear-gradient(135deg,#1a1a2e 30%,var(--pur));-webkit-background-clip:text;background-clip:text}
+.login-sub{text-align:center;color:var(--muted2);font-size:13px;margin-bottom:28px}
+.color-row{display:flex;justify-content:center;gap:8px;margin-bottom:26px}
+.cdot{width:11px;height:11px;border-radius:50%}
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:11px;font-weight:700;color:var(--muted2);
+  letter-spacing:.8px;text-transform:uppercase;margin-bottom:7px}
+.form-input{width:100%;background:var(--panel2);border:1.5px solid var(--border2);
+  border-radius:13px;padding:15px 17px;font-family:var(--ff-b);font-size:15px;
+  font-weight:500;color:var(--txt);outline:none;transition:border .2s,box-shadow .2s}
+.form-input::placeholder{color:var(--muted)}
+.form-input:focus{border-color:var(--pur);box-shadow:0 0 0 3px var(--pur-g)}
+.btn-primary{width:100%;background:linear-gradient(135deg,var(--pur),#6366F1);
+  border:none;border-radius:13px;padding:17px;font-family:var(--ff-h);
+  font-size:16px;font-weight:800;color:#fff;cursor:pointer;margin-top:6px;transition:all .2s}
+.btn-primary:active{transform:scale(.97)}
+.login-err{color:var(--red);font-size:13px;text-align:center;margin-top:9px;display:none}
+
+.app-header{display:flex;align-items:center;justify-content:space-between;
+  padding:12px 18px;border-bottom:1px solid var(--border);flex-shrink:0;
+  background:var(--header-bg);backdrop-filter:blur(20px);position:relative;z-index:10}
+.header-brand{font-family:var(--ff-h);font-size:19px;font-weight:800;
+  background:linear-gradient(135deg,#fff,var(--pur));-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;background-clip:text}
+body.light .header-brand{background:linear-gradient(135deg,var(--txt),var(--pur));-webkit-background-clip:text;background-clip:text}
+.header-child{font-size:11px;font-weight:700;color:var(--muted2)}
+.header-child span{color:var(--pur)}
+.header-right{display:flex;align-items:center;gap:8px}
+
+.theme-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border2);
+  background:var(--panel2);cursor:pointer;font-size:17px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s!important}
+.theme-btn:active{transform:scale(.85)}
+
+.ble-badge{display:flex;align-items:center;gap:6px;border-radius:20px;
+  padding:7px 12px;cursor:pointer;border:1.5px solid var(--border2);
+  background:var(--panel2);transition:all .25s;position:relative;overflow:hidden}
+.ble-badge.connected{border-color:var(--ble-b);background:var(--ble-g)}
+.ble-badge.connected::after{content:'';position:absolute;inset:-1px;border-radius:20px;
+  border:1px solid var(--ble);opacity:.4;animation:ripple 2s infinite}
+.ble-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.ble-dot.connected{background:var(--ble);animation:bleGlow 2s infinite}
+.ble-dot.scanning{background:var(--yel);animation:pulse 1s infinite}
+.ble-label{font-family:var(--ff-m);font-size:10px;color:var(--muted2)}
+.ble-badge.connected .ble-label{color:var(--ble)}
+
+.tab-bar{display:flex;padding:10px 16px;gap:5px;flex-shrink:0;border-bottom:1px solid var(--border)}
+.tb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px;
+  border:none;background:none;cursor:pointer;border-radius:13px;
+  transition:all .2s;font-family:var(--ff-b)}
+.tb svg{width:19px;height:19px;stroke:var(--muted);transition:stroke .2s}
+.tb span{font-size:10px;font-weight:700;color:var(--muted);transition:color .2s;letter-spacing:.3px}
+.tb.on{background:var(--pur-g);border:1px solid var(--pur-b)}
+.tb.on svg{stroke:var(--pur)} .tb.on span{color:var(--pur)}
+.tb:active{transform:scale(.9)}
+
+.tc{display:none;flex:1;overflow-y:auto;padding:14px 16px 90px;animation:fadeUp .25s}
+.tc.on{display:block}
+
+.ble-banner{background:linear-gradient(135deg,var(--ble-g),rgba(99,102,241,.08));
+  border:1.5px solid var(--ble-b);border-radius:18px;padding:18px;margin-bottom:14px;
+  text-align:center;position:relative;overflow:hidden}
+.ble-banner::before{content:'';position:absolute;top:-30px;right:-30px;
+  width:100px;height:100px;background:radial-gradient(circle,var(--ble-g),transparent);pointer-events:none}
+.ble-banner-ico{font-size:36px;margin-bottom:8px}
+.ble-banner-title{font-family:var(--ff-h);font-size:16px;font-weight:800;margin-bottom:4px}
+.ble-banner-sub{font-size:12px;color:var(--muted2);margin-bottom:14px}
+.btn-ble-connect{background:linear-gradient(135deg,var(--ble),#0066CC);
+  border:none;border-radius:13px;padding:14px 28px;font-family:var(--ff-h);
+  font-size:14px;font-weight:800;color:#fff;cursor:pointer;
+  transition:all .2s;display:inline-flex;align-items:center;gap:8px}
+.btn-ble-connect:active{transform:scale(.96)}
+.btn-ble-connect:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.ble-status-bar{display:flex;align-items:center;justify-content:center;gap:8px;
+  margin-top:10px;font-size:12px;font-weight:700;color:var(--muted2)}
+
+.device-card{background:linear-gradient(135deg,var(--ble-g),rgba(0,191,255,.05));
+  border:1.5px solid var(--ble-b);border-radius:16px;padding:14px 16px;margin-bottom:14px;
+  display:none}
+.device-card.on{display:block}
+.device-top{display:flex;align-items:center;justify-content:space-between}
+.device-name{font-family:var(--ff-h);font-size:15px;font-weight:800;color:var(--ble)}
+.device-rssi{font-family:var(--ff-m);font-size:11px;color:var(--muted2)}
+.btn-disconnect{background:var(--red-g);border:1px solid var(--red-b);
+  border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;
+  color:var(--red);cursor:pointer;font-family:var(--ff-b);transition:all .2s}
+.btn-disconnect:active{transform:scale(.93)}
+.device-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
+.device-cell{background:rgba(0,0,0,.2);border-radius:10px;padding:8px}
+body.light .device-cell{background:rgba(0,0,0,.05)}
+.dc-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:3px}
+.dc-val{font-family:var(--ff-m);font-size:12px;font-weight:700;color:var(--txt)}
+
+.ctrl-row{display:flex;gap:8px;margin-bottom:8px}
+.ctrl-btn{flex:1;border:none;border-radius:14px;padding:15px;font-family:var(--ff-h);
+  font-size:13px;font-weight:800;cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:7px}
+.ctrl-btn svg{width:17px;height:17px}
+.ctrl-btn:active{transform:scale(.95)}
+.ctrl-btn:disabled{opacity:.3;cursor:not-allowed;transform:none!important}
+
+.vol-panel{background:var(--panel);border:1px solid var(--border);border-radius:17px;
+  padding:13px 15px;margin-bottom:12px}
+.vol-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
+.vol-title{font-size:12px;font-weight:700;color:var(--muted2);letter-spacing:.4px;text-transform:uppercase}
+.vol-num{font-family:var(--ff-m);font-size:20px;font-weight:700;color:var(--pur)}
+.vol-track{position:relative;height:6px;background:var(--border2);border-radius:99px;
+  margin-bottom:11px;cursor:pointer}
+.vol-fill{position:absolute;left:0;top:0;height:100%;border-radius:99px;
+  background:linear-gradient(90deg,var(--pur),#6366F1);transition:width .08s}
+.vol-thumb{position:absolute;top:50%;width:20px;height:20px;border-radius:50%;
+  background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.45);transform:translate(-50%,-50%);
+  transition:left .08s;cursor:grab}
+.vol-thumb:active{cursor:grabbing;transform:translate(-50%,-50%) scale(1.15)}
+.vol-presets{display:flex;gap:6px}
+.vp{flex:1;padding:8px 4px;border:1.5px solid var(--border);background:none;border-radius:9px;
+  font-family:var(--ff-b);font-size:11px;font-weight:700;color:var(--muted2);cursor:pointer;transition:all .18s}
+.vp.on{border-color:var(--pur);background:var(--pur-g);color:var(--pur)}
+.vp:active{transform:scale(.92)}
+
+.live-panel{border-radius:18px;overflow:hidden;border:1px solid var(--border);
+  position:relative;margin-bottom:12px}
+.live-hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:11px 15px;background:var(--panel);border-bottom:1px solid var(--border)}
+.live-title{font-size:11px;font-weight:700;color:var(--muted2);letter-spacing:.7px;
+  text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--red);animation:pulse 1.2s infinite}
+.live-body{min-height:190px;background:var(--panel);display:flex;align-items:center;
+  justify-content:center;flex-direction:column;padding:18px;transition:background .4s}
+
+.color-display{text-align:center;animation:fadeIn .3s;width:100%}
+.color-orb{width:100px;height:100px;border-radius:50%;margin:0 auto 14px;
+  display:flex;align-items:center;justify-content:center;font-size:44px;
+  transition:all .4s;position:relative}
+.color-orb::after{content:'';position:absolute;inset:-6px;border-radius:50%;
+  border:2px solid currentColor;opacity:.3;animation:spin 4s linear infinite}
+.color-name{font-family:var(--ff-h);font-size:34px;font-weight:800;transition:color .4s}
+.color-sub{font-size:13px;color:var(--muted2);margin-top:3px}
+.color-counts{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:14px;width:100%}
+.cnt-chip{border-radius:11px;padding:9px 5px;text-align:center;border:1px solid transparent}
+.cnt-chip-n{font-family:var(--ff-m);font-size:17px;font-weight:700}
+.cnt-chip-l{font-size:10px;font-weight:700;margin-top:2px;opacity:.7}
+
+.num-display{text-align:center;animation:fadeIn .3s;width:100%}
+.num-big{font-family:var(--ff-h);font-size:96px;font-weight:800;line-height:1;
+  background:linear-gradient(135deg,var(--grn),#00B3CC);-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;background-clip:text}
+.num-big.bounce{animation:bounce .5s ease}
+.num-label{font-size:13px;color:var(--muted2);font-weight:600;margin-top:3px}
+.dots-grid{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;
+  margin-top:14px;max-width:210px;margin-left:auto;margin-right:auto}
+.dot-item{width:26px;height:26px;border-radius:50%;border:2px solid var(--border2);transition:all .3s}
+.dot-item.on{background:var(--grn);border-color:var(--grn);
+  box-shadow:0 0 9px var(--grn-g);animation:popIn .3s ease}
+
+.idle-state{text-align:center;color:var(--muted);width:100%}
+.idle-ico{font-size:44px;margin-bottom:10px;opacity:.8}
+.idle-txt{font-size:13px;font-weight:600;line-height:1.5}
+
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
+.stat-card{background:var(--panel);border:1px solid var(--border);border-radius:15px;padding:15px;text-align:center}
+.stat-n{font-family:var(--ff-h);font-size:30px;font-weight:800;color:var(--pur)}
+.stat-l{font-size:11px;font-weight:700;color:var(--muted2);margin-top:2px;text-transform:uppercase}
+.chart-card{background:var(--panel);border:1px solid var(--border);border-radius:15px;padding:15px;margin-bottom:13px}
+.chart-title{font-size:11px;font-weight:700;color:var(--muted2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:13px}
+.log-card{background:var(--panel);border:1px solid var(--border);border-radius:15px;overflow:hidden}
+.log-hdr{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .2s}
+.log-hdr:active{background:var(--panel2)}
+.log-title{font-size:11px;font-weight:700;color:var(--muted2);letter-spacing:.5px;text-transform:uppercase}
+.log-body{display:none}
+.log-body.on{display:block;animation:fadeIn .3s}
+.btn-export{background:var(--pur-g);border:1px solid var(--pur-b);border-radius:9px;
+  padding:6px 11px;font-size:11px;font-weight:700;color:var(--pur);cursor:pointer;
+  font-family:var(--ff-b);display:flex;align-items:center;gap:4px;transition:all .18s}
+.btn-export:active{transform:scale(.94)}
+.log-item{display:flex;align-items:center;gap:11px;padding:11px 15px;
+  border-bottom:1px solid var(--border);animation:slideRight .3s ease}
+.log-item:last-child{border-bottom:none}
+.log-badge{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.log-val{font-family:var(--ff-h);font-size:13px;font-weight:800}
+.log-ts{font-size:11px;color:var(--muted);font-weight:500;margin-top:1px}
+.log-mode-badge{font-size:10px;font-weight:700;padding:3px 7px;border-radius:20px}
+.log-empty{text-align:center;padding:30px;color:var(--muted);font-size:13px;font-weight:600}
+
+.profile-hero{text-align:center;padding:18px 0 20px}
+.profile-av{width:70px;height:70px;border-radius:20px;
+  background:linear-gradient(135deg,var(--pur),#6366F1);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 11px;
+  font-family:var(--ff-h);font-size:26px;font-weight:800;color:#fff;
+  box-shadow:0 8px 22px var(--pur-g)}
+.profile-name{font-family:var(--ff-h);font-size:20px;font-weight:800}
+.profile-par{font-size:12px;color:var(--muted2);margin-top:3px}
+.profile-par span{color:var(--pur);font-weight:700}
+.sec-lbl{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:1px;
+  text-transform:uppercase;margin:18px 0 9px}
+.info-card{background:var(--panel);border:1px solid var(--border);border-radius:15px;overflow:hidden}
+.info-row{display:flex;align-items:center;justify-content:space-between;
+  padding:13px 15px;border-bottom:1px solid var(--border)}
+.info-row:last-child{border-bottom:none}
+.info-key{font-size:13px;font-weight:700;color:var(--muted2)}
+.info-val{font-family:var(--ff-m);font-size:11px;font-weight:700;color:var(--txt)}
+.info-val.ok{color:var(--grn)} .info-val.err{color:var(--red)} .info-val.wait{color:var(--yel)}
+.edit-card{background:var(--panel);border:1px solid var(--border);border-radius:15px;padding:15px;margin-bottom:9px}
+.edit-grp{margin-bottom:13px}
+.edit-lbl{display:block;font-size:11px;font-weight:700;color:var(--muted2);
+  letter-spacing:.7px;text-transform:uppercase;margin-bottom:7px}
+.edit-inp{width:100%;background:var(--panel2);border:1.5px solid var(--border2);
+  border-radius:11px;padding:13px 15px;font-family:var(--ff-b);font-size:14px;
+  font-weight:600;color:var(--txt);outline:none;transition:border .2s,box-shadow .2s}
+.edit-inp:focus{border-color:var(--pur);box-shadow:0 0 0 3px var(--pur-g)}
+.btn-save{width:100%;background:linear-gradient(135deg,var(--pur),#6366F1);
+  border:none;border-radius:11px;padding:14px;font-family:var(--ff-h);
+  font-size:14px;font-weight:800;color:#fff;cursor:pointer;transition:all .2s}
+.btn-save:active{transform:scale(.97)}
+.save-ok{background:var(--grn-g);border:1px solid var(--grn-b);border-radius:9px;
+  padding:9px;text-align:center;color:var(--grn);font-size:13px;font-weight:700;
+  margin-top:9px;display:none}
+.btn-danger{width:100%;background:var(--red-g);border:1.5px solid var(--red-b);
+  border-radius:11px;padding:13px;font-family:var(--ff-h);font-size:13px;
+  font-weight:800;color:var(--red);cursor:pointer;transition:all .2s;margin-top:4px}
+.btn-danger:active{transform:scale(.97)}
+
+.guide-card{background:var(--panel);border:1px solid var(--border);
+  border-radius:15px;padding:15px;margin-bottom:9px;border-left:3px solid var(--pur)}
+.guide-card.red{border-left-color:var(--red)}
+.guide-card.grn{border-left-color:var(--grn)}
+.guide-card.blu{border-left-color:var(--blu)}
+.guide-card.ble{border-left-color:var(--ble)}
+.guide-title{font-family:var(--ff-h);font-size:14px;font-weight:800;margin-bottom:5px}
+.guide-body{font-size:12px;color:var(--muted2);line-height:1.7}
+.step-list{display:flex;flex-direction:column;gap:11px}
+.step-item{display:flex;gap:11px;align-items:flex-start}
+.step-num{width:30px;height:30px;border-radius:50%;background:var(--pur-g);
+  border:1px solid var(--pur-b);display:flex;align-items:center;justify-content:center;
+  font-family:var(--ff-m);font-size:12px;font-weight:700;color:var(--pur);flex-shrink:0}
+.step-title{font-size:13px;font-weight:700;margin-bottom:2px}
+.step-desc{font-size:12px;color:var(--muted2);line-height:1.6}
+
+.toast-wrap{position:fixed;top:66px;right:16px;z-index:1000;display:flex;flex-direction:column;gap:7px}
+.toast{background:var(--panel2);border:1px solid var(--border2);border-radius:13px;
+  padding:11px 15px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:7px;
+  box-shadow:0 8px 22px var(--shadow);animation:slideRight .3s;max-width:270px}
+.toast.ok{border-color:var(--grn-b);color:var(--grn)}
+.toast.err{border-color:var(--red-b);color:var(--red)}
+.toast.info{border-color:var(--pur-b);color:var(--pur)}
+.toast.warn{border-color:var(--yel-b);color:var(--yel)}
+.toast.ble{border-color:var(--ble-b);color:var(--ble)}
+.toast-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+.confetti-wrap{position:fixed;inset:0;pointer-events:none;z-index:999;overflow:hidden}
+.confetti-piece{position:absolute;width:8px;height:8px;border-radius:2px;animation:confettiDrop 1.5s ease forwards}
+
+.wrong-list-item{display:flex;flex-direction:column;gap:4px;padding:12px 14px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;font-size:13px;line-height:1.4}
+.wrong-list-item b {color:var(--txt)}
+.wrong-list-item i {color:var(--red);font-size:12px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="scanline"></div>
+<div class="toast-wrap" id="toast-wrap"></div>
+<div class="confetti-wrap" id="confetti-wrap"></div>
+
+<div id="pg-login" class="pg on">
+  <div class="login-card">
+    <div class="login-logo">📡</div>
+    <h1 class="login-h1">NUMORA</h1>
+    <p class="login-sub">Belajar via Bluetooth — Tanpa Internet</p>
+    <div class="color-row">
+      <div class="cdot" style="background:var(--red)"></div>
+      <div class="cdot" style="background:var(--yel)"></div>
+      <div class="cdot" style="background:var(--grn)"></div>
+      <div class="cdot" style="background:var(--blu)"></div>
+      <div class="cdot" style="background:var(--ble)"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nama Anak</label>
+      <input id="inp-child" class="form-input" type="text" placeholder="Contoh: Adi">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nama Pendamping</label>
+      <input id="inp-parent" class="form-input" type="text" placeholder="Contoh: Ibu Dewi">
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Masuk →</button>
+    <div id="lerr" class="login-err">Nama wajib diisi!</div>
+  </div>
+</div>
+
+<div id="pg-app" class="pg">
+  <div class="app-header">
+    <div>
+      <div class="header-brand">NUMORA BLE</div>
+      <div class="header-child">Halo, <span id="h-name">—</span>!</div>
+    </div>
+    <div class="header-right">
+      <button class="theme-btn" onclick="toggleTheme()" id="theme-btn" title="Toggle tema">🌙</button>
+      <div class="ble-badge" id="ble-badge" onclick="connectBLE()">
+        <div class="ble-dot" id="ble-dot"></div>
+        <span class="ble-label" id="ble-label">Hubungkan</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+    <div class="tab-bar">
+      <button class="tb on" id="tb-home" onclick="goTab('home')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+        <span>Beranda</span>
+      </button>
+      <button class="tb" id="tb-stats" onclick="goTab('stats')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>Statistik</span>
+      </button>
+      <button class="tb" id="tb-profil" onclick="goTab('profil')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>Profil</span>
+      </button>
+      <button class="tb" id="tb-panduan" onclick="goTab('panduan')">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <span>Panduan</span>
+      </button>
+    </div>
+
+    <div id="tc-home" class="tc on">
+      <div class="ble-banner" id="ble-banner">
+        <div class="ble-banner-ico">📶</div>
+        <div class="ble-banner-title">Hubungkan ke ESP32</div>
+        <div class="ble-banner-sub">Klik tombol di bawah, pilih <strong>NUMORA BLE</strong> dari daftar perangkat</div>
+        <button class="btn-ble-connect" id="btn-ble-main" onclick="connectBLE()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/><path d="M12 3v18"/></svg>
+          Hubungkan BLE
+        </button>
+        <div class="ble-status-bar" id="ble-status-bar">Siap untuk dihubungkan</div>
+      </div>
+
+      <div class="device-card" id="device-card">
+        <div class="device-top">
+          <div>
+            <div class="device-name" id="device-name">NUMORA BLE</div>
+            <div class="device-rssi">Bluetooth Low Energy • Terhubung ✓</div>
+          </div>
+          <button class="btn-disconnect" onclick="disconnectBLE()">Putus</button>
+        </div>
+        <div class="device-grid">
+          <div class="device-cell"><div class="dc-label">Status</div><div class="dc-val" id="dc-status">—</div></div>
+          <div class="device-cell"><div class="dc-label">Volume HW</div><div class="dc-val" id="dc-vol">—</div></div>
+          <div class="device-cell"><div class="dc-label">Mode ESP32</div><div class="dc-val" id="dc-mode">—</div></div>
+        </div>
+      </div>
+
+      <div class="ctrl-row">
+        <button class="ctrl-btn" id="btn-belajar" onclick="doBelajar()" style="background:linear-gradient(135deg,var(--grn),#00B377);color:#0A0F0C">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          Mode Belajar
+        </button>
+        <button class="ctrl-btn" id="btn-kuis" onclick="doKuis()" style="background:linear-gradient(135deg,var(--pur),#6366F1);color:#fff">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Mode Kuis 
+        </button>
+      </div>
+      <div class="ctrl-row" style="margin-bottom:12px">
+        <button class="ctrl-btn" id="btn-selesai" onclick="doSelesai()" style="background:var(--panel2);border:1.5px solid var(--border2);color:var(--red);" disabled>
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+          Selesai Bermain
+        </button>
+      </div>
+
+      <div class="vol-panel">
+        <div class="vol-hdr">
+          <div class="vol-title">🔊 Volume</div>
+          <div class="vol-num" id="vol-num">20</div>
+        </div>
+        <div class="vol-track" id="vol-track">
+          <div class="vol-fill" id="vol-fill" style="width:66.7%"></div>
+          <div class="vol-thumb" id="vol-thumb" style="left:66.7%"></div>
+        </div>
+        <div class="vol-presets">
+          <button class="vp" onclick="setVol(0)">🔇</button>
+          <button class="vp" onclick="setVol(10)">🔈</button>
+          <button class="vp on" onclick="setVol(20)">🔉</button>
+          <button class="vp" onclick="setVol(30)">🔊</button>
+        </div>
+      </div>
+
+      <div class="live-panel">
+        <div class="live-hdr">
+          <div class="live-title"><div class="live-dot"></div>LIVE · <span id="live-topic">Idle</span></div>
+          <div style="font-size:11px;color:var(--muted);font-family:var(--ff-m)" id="live-count">0 pembacaan</div>
+        </div>
+        <div class="live-body" id="live-body">
+          <div class="idle-state">
+            <div class="idle-ico">📡</div>
+            <div class="idle-txt">Hubungkan BLE, lalu pilih Mode</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tc-stats" class="tc">
+      <div class="sec-lbl">Eksplorasi (Mode Belajar)</div>
+      <div class="stat-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+        <div class="stat-card"><div class="stat-n" id="st-tot">0</div><div class="stat-l">Total</div></div>
+        <div class="stat-card" style="border-bottom: 3px solid var(--grn)"><div class="stat-n" id="st-l-col" style="color:var(--grn)">0</div><div class="stat-l">Warna</div></div>
+        <div class="stat-card" style="border-bottom: 3px solid var(--blu)"><div class="stat-n" id="st-l-num" style="color:var(--blu)">0</div><div class="stat-l">Angka</div></div>
+      </div>
+
+      <div class="sec-lbl">Evaluasi (Mode Kuis)</div>
+      <div class="stat-grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="stat-card"><div class="stat-n" id="st-q-col">0%</div><div class="stat-l">Akurasi Warna</div><div style="font-size:10px;color:var(--muted2)" id="st-q-col-det">0 dari 0 Benar</div></div>
+        <div class="stat-card"><div class="stat-n" id="st-q-num">0%</div><div class="stat-l">Akurasi Angka</div><div style="font-size:10px;color:var(--muted2)" id="st-q-num-det">0 dari 0 Benar</div></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Pola Kesalahan Warna</div>
+        <div id="err-col-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">Pola Kesalahan Angka</div>
+        <div id="err-num-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+
+      <div class="log-card">
+        <div class="log-hdr" onclick="document.getElementById('log-body').classList.toggle('on')">
+          <div class="log-title">Riwayat Log Aktivitas ▾</div>
+          <button class="btn-export" onclick="exportCSV(); event.stopPropagation();">⬇ CSV</button>
+        </div>
+        <div class="log-body" id="log-body">
+          <div id="log-list"><div class="log-empty">Belum ada data</div></div>
+        </div>
+      </div>
+      <div style="height:20px"></div>
+    </div>
+
+    <div id="tc-profil" class="tc">
+      <div class="profile-hero">
+        <div class="profile-av" id="p-av">A</div>
+        <div class="profile-name" id="p-name">—</div>
+        <div class="profile-par">Pendamping: <span id="p-par">—</span></div>
+      </div>
+      <div class="sec-lbl">Koneksi BLE</div>
+      <div class="info-card">
+        <div class="info-row"><span class="info-key">Perangkat</span><span class="info-val" id="pf-device">—</span></div>
+        <div class="info-row"><span class="info-key">Status BLE</span><span class="info-val" id="pf-ble">Belum terhubung</span></div>
+      </div>
+      <div class="sec-lbl">Info ESP32</div>
+      <div class="info-card">
+        <div class="info-row"><span class="info-key">Volume HW</span><span class="info-val" id="pf-vol">—</span></div>
+        <div class="info-row"><span class="info-key">Mode</span><span class="info-val" id="pf-mode">—</span></div>
+        <div class="info-row"><span class="info-key">Update</span><span class="info-val" id="pf-ts" style="font-size:10px">—</span></div>
+      </div>
+      <div class="sec-lbl">Edit Profil</div>
+      <div class="edit-card">
+        <div class="edit-grp"><label class="edit-lbl">Nama Anak</label><input id="ef-child" class="edit-inp" type="text"></div>
+        <div class="edit-grp" style="margin-bottom:0"><label class="edit-lbl">Nama Pendamping</label><input id="ef-par" class="edit-inp" type="text"></div>
+      </div>
+      <button class="btn-save" onclick="saveProf()">Simpan Perubahan</button>
+      <div class="save-ok" id="save-ok">✓ Tersimpan!</div>
+      <div class="sec-lbl">Danger Zone</div>
+      <button class="btn-danger" onclick="clearAll()">🗑 Hapus Semua Data</button>
+      <div style="height:20px"></div>
+    </div>
+
+    <div id="tc-panduan" class="tc">
+      <div class="guide-card ble">
+        <div class="guide-title">📶 Bluetooth Low Energy (BLE)</div>
+        <div class="guide-body">Komunikasi langsung antara HP dan ESP32 tanpa internet. Latensi &lt;50ms, jarak ~10 meter.</div>
+      </div>
+      <div class="guide-card red"><div class="guide-title">🎨 Sensor TCS3200</div><div class="guide-body">Pin: S0=32, S1=25, S2=12, S3=13, OUT=14</div></div>
+      <div class="guide-card grn"><div class="guide-title">📡 Sensor IR</div><div class="guide-body">INPUT_PULLUP, Pin: GPIO 5. Trigger utama deteksi benda.</div></div>
+      <div class="sec-lbl">Cara Pakai</div>
+      <div class="guide-card">
+        <div class="step-list">
+          <div class="step-item"><div class="step-num">1</div><div class="step-body"><div class="step-title">Hubungkan BLE</div><div class="step-desc">Pilih NUMORA BLE dari daftar perangkat.</div></div></div>
+          <div class="step-item"><div class="step-num">2</div><div class="step-body"><div class="step-title">Tekan Mode Belajar / Kuis</div><div class="step-desc">Tombol mode sekarang otomatis berpindah antara warna dan angka. Sesi langsung berjalan!</div></div></div>
+          <div class="step-item"><div class="step-num">3</div><div class="step-body"><div class="step-title">Selesai Bermain</div><div class="step-desc">Tekan tombol ini untuk mengakhiri permainan. Sensor akan mati.</div></div></div>
+        </div>
+      </div>
+      <div style="height:20px"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+var SERVICE_UUID     = '12345678-1234-1234-1234-123456789abc';
+var CHAR_SENSOR_UUID = '12345678-1234-1234-1234-123456789001';
+var CHAR_CMD_UUID    = '12345678-1234-1234-1234-123456789002';
+var CHAR_STATUS_UUID = '12345678-1234-1234-1234-123456789003';
+
+var S={child:'',parent:'',mode:'',running:false,sess:0,
+  hist:[],cc:{MERAH:0,HIJAU:0,BIRU:0,KUNING:0},vol:20,
+  qstats:{k_angka_benar:0,k_angka_salah:0,k_warna_benar:0,k_warna_salah:0,err_w:{},err_n:{}}
+};
+var nextBelajar = 'warna'; 
+var nextKuis = 'warna';    
+
+var liveCount=0,darkMode=true;
+var bleDevice=null,bleServer=null,charCmd=null,bleConnected=false;
+var CMAP={
+  MERAH:{clr:'var(--red)',bg:'rgba(255,68,85,.08)',border:'rgba(255,68,85,.25)',emoji:'🔴',name:'Merah'},
+  HIJAU:{clr:'var(--grn)',bg:'rgba(0,229,153,.08)',border:'rgba(0,229,153,.25)',emoji:'🟢',name:'Hijau'},
+  BIRU: {clr:'var(--blu)',bg:'rgba(59,130,246,.08)',border:'rgba(59,130,246,.25)',emoji:'🔵',name:'Biru'},
+  KUNING:{clr:'var(--yel)',bg:'rgba(255,214,0,.08)',border:'rgba(255,214,0,.25)',emoji:'🟡',name:'Kuning'}
+};
+
+function ls(k,v){if(v===undefined){try{return JSON.parse(localStorage.getItem('nmble_'+k));}catch(e){return null;}}localStorage.setItem('nmble_'+k,JSON.stringify(v));}
+
+function toast(msg,type,dur){
+  var w=document.getElementById('toast-wrap');var t=document.createElement('div');
+  t.className='toast '+(type||'info');t.innerHTML='<div class="toast-dot"></div>'+msg;
+  w.appendChild(t);
+  setTimeout(function(){t.style.opacity='0';t.style.transform='translateX(110%)';t.style.transition='all .3s';setTimeout(function(){t.remove();},300);},dur||2600);
+}
+function confetti(){
+  var w=document.getElementById('confetti-wrap');var cls=['var(--red)','var(--yel)','var(--grn)','var(--blu)','var(--ble)'];
+  for(var i=0;i<16;i++){var p=document.createElement('div');p.className='confetti-piece';
+    p.style.cssText='left:'+Math.random()*100+'%;top:0;background:'+cls[Math.floor(Math.random()*cls.length)]+';animation-delay:'+Math.random()*.5+'s;animation-duration:'+(1+Math.random())+'s';
+    w.appendChild(p);setTimeout(function(e){e.remove();},2200,p);}
+}
+
+function toggleTheme(){
+  darkMode=!darkMode;document.body.classList.toggle('light',!darkMode);
+  document.getElementById('theme-btn').textContent=darkMode?'🌙':'☀️';ls('theme',darkMode?'dark':'light');
+}
+
+window.addEventListener('DOMContentLoaded',function(){
+  var theme=ls('theme');if(theme==='light'){darkMode=false;document.body.classList.add('light');document.getElementById('theme-btn').textContent='☀️';}
+  var u=ls('user');if(u&&u.child){S.child=u.child;S.parent=u.parent;
+    var h=ls('hist');if(h)S.hist=h;var cc=ls('cc');if(cc)S.cc=cc;
+    var ss=ls('sess');if(ss)S.sess=ss;var vol=ls('vol');if(vol!=null)S.vol=vol;
+    var qs=ls('qstats');if(qs){S.qstats=qs; if(!S.qstats.err_w)S.qstats.err_w={}; if(!S.qstats.err_n)S.qstats.err_n={};}
+    showApp();}
+  setupVolDrag();
+  setLiveIdle();
+});
+
+function doLogin(){
+  var c=document.getElementById('inp-child').value.trim();var p=document.getElementById('inp-parent').value.trim();
+  if(!c||!p){document.getElementById('lerr').style.display='block';return;}
+  S.child=c;S.parent=p;ls('user',{child:c,parent:p});showApp();
+}
+function showApp(){
+  document.getElementById('pg-login').classList.remove('on');document.getElementById('pg-app').classList.add('on');
+  document.getElementById('h-name').textContent=S.child;applyVol(S.vol);updateProf();
+}
+
+function goTab(t){
+  ['home','stats','profil','panduan'].forEach(function(id){
+    document.getElementById('tc-'+id).classList[id===t?'add':'remove']('on');
+    document.getElementById('tb-'+id).classList[id===t?'add':'remove']('on');
+  });
+  if(t==='stats'){updateStats();renderLog();}
+  if(t==='profil'){updateProf();}
+}
+
+function doBelajar(){
+  if (!S.running) {
+    S.sess++; 
+    ls('sess', S.sess);
+  }
+  S.running = true;
+  document.getElementById('btn-selesai').disabled = false;
+  liveCount = 0; 
+  if (nextBelajar === 'warna') {
+    nextBelajar = 'angka'; 
+    S.mode = 'warna';
+    bleSend({cmd: 'belajar_warna'});
+    toast('Belajar Warna Dimulai!', 'ok');
+    document.getElementById('live-topic').textContent = 'Belajar Warna';
+  } else {
+    nextBelajar = 'warna'; 
+    S.mode = 'angka';
+    bleSend({cmd: 'belajar_angka'});
+    toast('Belajar Angka Dimulai!', 'ok');
+    document.getElementById('live-topic').textContent = 'Belajar Angka';
+  }
+  setLiveIdle(); 
+  updateUIModeLabels();
+}
+
+function doKuis(){
+  if (!S.running) {
+    S.sess++; 
+    ls('sess', S.sess);
+  }
+  S.running = true;
+  document.getElementById('btn-selesai').disabled = false;
+  liveCount = 0; 
+  if (nextKuis === 'warna') {
+    nextKuis = 'angka'; 
+    S.mode = 'kuis_warna';
+    bleSend({cmd: 'kuis_warna'});
+    toast('Kuis Warna Dimulai!', 'ok');
+    document.getElementById('live-topic').textContent = 'Kuis Warna';
+  } else {
+    nextKuis = 'warna'; 
+    S.mode = 'kuis_angka';
+    bleSend({cmd: 'kuis_angka'});
+    toast('Kuis Angka Dimulai!', 'ok');
+    document.getElementById('live-topic').textContent = 'Kuis Angka';
+  }
+  setLiveIdle();
+  updateUIModeLabels();
+}
+
+function doSelesai(){
+  S.running = false;
+  document.getElementById('btn-selesai').disabled = true;
+  bleSend({cmd: 'selesai'});
+  toast('Selesai Bermain. Sensor berhenti.', 'info');
+  nextBelajar = 'warna'; 
+  nextKuis = 'warna';
+  S.mode = 'idle';
+  document.getElementById('live-topic').textContent = 'Idle';
+  setLiveIdle();
+  updateUIModeLabels();
+}
+
+function updateUIModeLabels(){
+  var labelMode = 'Selesai/Idle';
+  var labelStatus = 'Selesai/Idle';
+  if(S.running){
+    if(S.mode === 'warna'){ labelMode = 'Mode Belajar'; labelStatus = 'Belajar Warna'; }
+    else if(S.mode === 'angka'){ labelMode = 'Mode Belajar'; labelStatus = 'Belajar Angka'; }
+    else if(S.mode === 'kuis_warna'){ labelMode = 'Mode Kuis'; labelStatus = 'Kuis Warna'; }
+    else if(S.mode === 'kuis_angka'){ labelMode = 'Mode Kuis'; labelStatus = 'Kuis Angka'; }
+  }
+  document.getElementById('dc-mode').textContent = labelMode;
+  document.getElementById('pf-mode').textContent = labelMode;
+  document.getElementById('dc-status').textContent = labelStatus;
+}
+
+function setupVolDrag(){
+  var track=document.getElementById('vol-track'),dragging=false;
+  function calc(e){var r=track.getBoundingClientRect();var x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;return Math.round(Math.max(0,Math.min(1,x/r.width))*30);}
+  track.addEventListener('mousedown',function(e){dragging=true;applyVol(calc(e));e.preventDefault();});
+  track.addEventListener('touchstart',function(e){dragging=true;applyVol(calc(e));e.preventDefault();},{passive:false});
+  document.addEventListener('mousemove',function(e){if(dragging)applyVol(calc(e));});
+  document.addEventListener('touchmove',function(e){if(dragging){applyVol(calc(e));e.preventDefault();}},{passive:false});
+  document.addEventListener('mouseup',function(){if(dragging){dragging=false;bleSend({cmd:'volume',value:S.vol});}});
+  document.addEventListener('touchend',function(){if(dragging){dragging=false;bleSend({cmd:'volume',value:S.vol});}});
+}
+function applyVol(v){
+  S.vol=v;ls('vol',v);var p=(v/30*100)+'%';
+  document.getElementById('vol-fill').style.width=p;document.getElementById('vol-thumb').style.left=p;document.getElementById('vol-num').textContent=v;
+  document.querySelectorAll('.vp').forEach(function(b,i){b.classList[i===(v===0?0:v<=10?1:v<=20?2:3)?'add':'remove']('on');});
+}
+function setVol(v){applyVol(v);bleSend({cmd:'volume',value:v});}
+
+function setLiveIdle(){
+  var txt = 'Hubungkan BLE, lalu pilih Mode permainan di atas.';
+  var ico = '📡';
+  if (S.running) {
+    if (S.mode === 'warna') { txt = 'Mode Belajar Warna Aktif!<br><span style="color:var(--muted)">Dekatkan objek berwarna ke Sensor Warna TCS3200</span>'; ico = '🎨'; }
+    else if (S.mode === 'angka') { txt = 'Mode Belajar Angka Aktif!<br><span style="color:var(--muted)">Masukkan atau lewati objek melalui Sensor Inframerah (IR)</span>'; ico = '🔢'; }
+    else if (S.mode === 'kuis_warna') { txt = 'Mode Kuis Warna Aktif!<br><span style="color:var(--muted)">Dengarkan pertanyaan suara dan arahkan warna yang tepat</span>'; ico = '❓'; }
+    else if (S.mode === 'kuis_angka') { txt = 'Mode Kuis Angka Aktif!<br><span style="color:var(--muted)">Hitung dan masukkan jumlah objek sesuai dengan instruksi</span>'; ico = '📊'; }
+  }
+  document.getElementById('live-body').innerHTML='<div class="idle-state"><div class="idle-ico">'+ico+'</div><div class="idle-txt">'+txt+'</div></div>';
+  document.getElementById('live-body').style.background='';
+}
+
+function renderColorUI(c){
+  var m=CMAP[c];if(!m)return;
+  liveCount++;document.getElementById('live-count').textContent=liveCount+' pembacaan';
+  document.getElementById('live-body').style.background=m.bg;
+  document.getElementById('live-body').innerHTML=
+    '<div class="color-display">'+
+    '<div class="color-orb" style="background:'+m.bg+';border:3px solid '+m.clr+';color:'+m.clr+'">'+m.emoji+'</div>'+
+    '<div class="color-name" style="color:'+m.clr+'">'+m.name+'</div>'+
+    '<div class="color-sub">'+S.cc[c]+' kali terdeteksi</div>'+
+    '<div class="color-counts">'+Object.keys(CMAP).map(function(k){var cm=CMAP[k];return '<div class="cnt-chip" style="background:'+cm.bg+';border-color:'+cm.border+'"><div class="cnt-chip-n" style="color:'+cm.clr+'">'+(S.cc[k]||0)+'</div><div class="cnt-chip-l" style="color:'+cm.clr+'">'+cm.name+'</div></div>';}).join('')+
+    '</div></div>';
+  setTimeout(function(){document.getElementById('live-body').style.background='';},700);
+}
+
+function renderNumUI(n){
+  liveCount++;document.getElementById('live-count').textContent=liveCount+' pembacaan';
+  var dots='';for(var i=1;i<=10;i++)dots+='<div class="dot-item'+(i<=n?' on':'')+'"></div>';
+  document.getElementById('live-body').innerHTML=
+    '<div class="num-display"><div class="num-big bounce">'+n+'</div>'+
+    '<div class="num-label">objek terdeteksi</div><div class="dots-grid">'+dots+'</div></div>';
+  confetti();
+}
+
+function handleData(d){
+  if(!S.running) return;
+  var ts=new Date().toLocaleTimeString('id-ID');
+  S.hist.unshift({mode:d.mode,value:d.value,ts:ts,result:d.result||d.status||d.jawaban||''});
+  if(S.hist.length>200)S.hist=S.hist.slice(0,200); ls('hist',S.hist);
+  
+  var resField = String(d.result || d.status || d.jawaban || '').toLowerCase();
+  var isCorrect = resField.includes('benar') || d.correct === true;
+  var isIncorrect = resField.includes('salah') || d.correct === false;
+
+  if(d.mode==='warna'){
+    var c=(d.value+'').toUpperCase();
+    if(S.cc[c]!==undefined){S.cc[c]++;ls('cc',S.cc);}
+    renderColorUI(c);
+  } else if(d.mode==='angka'){
+    renderNumUI(parseInt(d.value)||0);
+  } else if(d.mode==='kuis_warna'){
+    var c=(d.value+'').toUpperCase();
+    var exp = (d.expected || 'Tidak Diketahui').toUpperCase();
+    if(isCorrect) S.qstats.k_warna_benar++;
+    else if(isIncorrect){
+      S.qstats.k_warna_salah++;
+      var key = exp + '|' + c;
+      S.qstats.err_w[key] = (S.qstats.err_w[key] || 0) + 1;
+    }
+    ls('qstats',S.qstats);
+    if(S.cc[c]!==undefined){S.cc[c]++;ls('cc',S.cc);}
+    renderColorUI(c);
+  } else if(d.mode==='kuis_angka'){
+    var n = parseInt(d.value)||0;
+    var expN = d.expected || '?';
+    if(isCorrect) S.qstats.k_angka_benar++;
+    else if(isIncorrect){
+      S.qstats.k_angka_salah++;
+      var keyN = expN + '|' + n;
+      S.qstats.err_n[keyN] = (S.qstats.err_n[keyN] || 0) + 1;
+    }
+    ls('qstats',S.qstats);
+    renderNumUI(n);
+  }
+  
+  if (document.getElementById('tc-stats').classList.contains('on')) {
+      if(typeof updateStats === 'function') updateStats();
+      if(typeof renderLog === 'function') renderLog();
+  }
+}
+
+function handleStatus(d){
+  var ts=new Date().toLocaleTimeString('id-ID');
+  var modeLabel = d.mode || '';
+  if(d.mode==='warna' || d.mode==='angka') modeLabel='Mode Belajar';
+  else if(d.mode==='kuis_warna' || d.mode==='kuis_angka') modeLabel='Mode Kuis';
+  else if(d.status==='idle') modeLabel='Selesai/Idle';
+  
+  var statusLabel = d.status || '—';
+  if(statusLabel.toLowerCase() === 'heartbeat' || S.running) {
+    if (S.mode === 'warna') statusLabel = 'Belajar Warna';
+    else if (S.mode === 'angka') statusLabel = 'Belajar Angka';
+    else if (S.mode === 'kuis_warna') statusLabel = 'Kuis Warna';
+    else if (S.mode === 'kuis_angka') statusLabel = 'Kuis Angka';
+  } else if(statusLabel.toLowerCase() === 'idle') {
+    statusLabel = 'Selesai/Idle';
+  }
+
+  document.getElementById('dc-status').textContent=statusLabel;
+  document.getElementById('dc-vol').textContent=(d.volume!==undefined?d.volume:S.vol)+'/30';
+  document.getElementById('dc-mode').textContent=modeLabel;
+  document.getElementById('pf-vol').textContent=(d.volume!==undefined?d.volume:'—')+'/30';
+  document.getElementById('pf-mode').textContent=modeLabel;
+  document.getElementById('pf-ts').textContent=ts;
+}
+
+async function connectBLE(){
+  if(!navigator.bluetooth){toast('Browser tidak mendukung BLE!','err',4000);return;}
+  if(bleConnected){toast('Sudah terhubung!','info');return;}
+  setBleUI('scanning');document.getElementById('ble-status-bar').textContent='Mencari NUMORA BLE...';
+  try{
+    bleDevice=await navigator.bluetooth.requestDevice({filters:[{name:'NUMORA BLE'}],optionalServices:[SERVICE_UUID]});
+    bleDevice.addEventListener('gattserverdisconnected',onBLEDisconnect);
+    toast('📶 Menghubungkan...','ble',2000);
+    bleServer=await bleDevice.gatt.connect();
+    var service=await bleServer.getPrimaryService(SERVICE_UUID);
+
+    var charSensor=await service.getCharacteristic(CHAR_SENSOR_UUID);
+    await charSensor.startNotifications();
+    charSensor.addEventListener('characteristicvaluechanged',function(e){
+      try{var d=JSON.parse(new TextDecoder().decode(e.target.value));handleData(d);}catch(err){}
+    });
+
+    var charStatus=await service.getCharacteristic(CHAR_STATUS_UUID);
+    await charStatus.startNotifications();
+    charStatus.addEventListener('characteristicvaluechanged',function(e){
+      try{var d=JSON.parse(new TextDecoder().decode(e.target.value));handleStatus(d);}catch(err){}
+    });
+
+    charCmd=await service.getCharacteristic(CHAR_CMD_UUID);
+    bleConnected=true;setBleUI('connected');
+    document.getElementById('device-name').textContent=bleDevice.name;
+    document.getElementById('pf-device').textContent=bleDevice.name;
+    document.getElementById('pf-ble').textContent='Terhubung';
+    document.getElementById('pf-ble').className='info-val ok';
+    toast('✅ Terhubung!','ok');
+  } catch(e){
+    if(e.name!=='NotFoundError')toast('Gagal: '+e.message,'err',4000);
+    setBleUI('disconnected');
+  }
+}
+
+function onBLEDisconnect(){
+  bleConnected=false;charCmd=null;setBleUI('disconnected');
+  toast('⚠ BLE terputus','warn',4000);
+  document.getElementById('pf-ble').textContent='Terputus';
+  document.getElementById('pf-ble').className='info-val err';
+}
+
+async function disconnectBLE(){
+  if(bleDevice&&bleDevice.gatt&&bleDevice.gatt.connected){bleDevice.gatt.disconnect();}
+}
+
+async function bleSend(obj){
+  if(!bleConnected||!charCmd) return;
+  try{
+    var enc=new TextEncoder().encode(JSON.stringify(obj));
+    await charCmd.writeValue(enc);
+  }catch(e){
+    if(e.name==='NetworkError'||e.name==='InvalidStateError'){
+      bleConnected=false;setBleUI('disconnected');toast('Terputus','err');
+    }
+  }
+}
+
+function setBleUI(state) {
+  var badge = document.getElementById('ble-badge'), dot = document.getElementById('ble-dot'),
+      label = document.getElementById('ble-label'), banner = document.getElementById('ble-banner'),
+      devCard = document.getElementById('device-card');
+      
+  if (state === 'connected') {
+    badge.className = 'ble-badge connected'; dot.className = 'ble-dot connected';
+    label.textContent = 'Terhubung';
+    banner.style.display = 'none';
+    devCard.classList.add('on');
+  } else if (state === 'scanning') {
+    badge.className = 'ble-badge'; dot.className = 'ble-dot scanning';
+    label.textContent = 'Mencari...';
+  } else {
+    badge.className = 'ble-badge'; dot.className = 'ble-dot';
+    label.textContent = 'Hubungkan';
+    banner.style.display = 'block';
+    devCard.classList.remove('on');
+  }
+}
+
+function updateStats() {
+  var tWarna = S.hist.filter(function(x) { return x.mode === 'warna'; }).length;
+  var tAngka = S.hist.filter(function(x) { return x.mode === 'angka'; }).length;
+  var tTotal = tWarna + tAngka;
+  
+  document.getElementById('st-tot').textContent = tTotal;
+  document.getElementById('st-l-col').textContent = tWarna;
+  document.getElementById('st-l-num').textContent = tAngka;
+  
+  var wB = S.qstats.k_warna_benar, wS = S.qstats.k_warna_salah;
+  var wTot = wB + wS;
+  var wAcc = wTot > 0 ? Math.round((wB / wTot) * 100) : 0;
+  
+  var nB = S.qstats.k_angka_benar, nS = S.qstats.k_angka_salah;
+  var nTot = nB + nS;
+  var nAcc = nTot > 0 ? Math.round((nB / nTot) * 100) : 0;
+
+  document.getElementById('st-q-col').textContent = wAcc + '%';
+  document.getElementById('st-q-col-det').textContent = wB + ' dari ' + wTot + ' Benar';
+  document.getElementById('st-q-num').textContent = nAcc + '%';
+  document.getElementById('st-q-num-det').textContent = nB + ' dari ' + nTot + ' Benar';
+
+  var ewHtml = '';
+  for(var kw in S.qstats.err_w) {
+    var pw = kw.split('|');
+    ewHtml += '<div class="wrong-list-item"><div>❓ Harusnya <b>' + pw[0] + '</b></div><div>➔ ❌ Anak memasukkan <b>' + pw[1] + '</b> <i>(' + S.qstats.err_w[kw] + 'x)</i></div></div>';
+  }
+  document.getElementById('err-col-list').innerHTML = ewHtml || '<div style="font-size:12px;color:var(--muted)">Belum ada data kesalahan</div>';
+
+  var enHtml = '';
+  for(var kn in S.qstats.err_n) {
+    var pn = kn.split('|');
+    enHtml += '<div class="wrong-list-item"><div>❓ Diminta <b>' + pn[0] + '</b></div><div>➔ ❌ Anak memasukkan <b>' + pn[1] + '</b> <i>(' + S.qstats.err_n[kn] + 'x)</i></div></div>';
+  }
+  document.getElementById('err-num-list').innerHTML = enHtml || '<div style="font-size:12px;color:var(--muted)">Belum ada data kesalahan</div>';
+}
+
+function renderLog() {
+  var w = document.getElementById('log-list');
+  if(!S.hist.length) { w.innerHTML = '<div class="log-empty">Belum ada data</div>'; return; }
+  var html = '';
+  S.hist.slice(0, 50).forEach(function(h) {
+    var isWarna = h.mode.includes('warna');
+    var m = CMAP[h.value] || {bg: 'var(--panel2)', clr: 'var(--txt)', emoji: '•'};
+    var emoji = isWarna ? m.emoji : '🔢';
+    var resBadge = '';
+    if(h.result && h.result !== '') {
+       var isOk = h.result.toLowerCase().includes('benar');
+       resBadge = '<span style="font-size:10px;padding:2px 6px;border-radius:6px;margin-left:8px;background:' + (isOk?'var(--grn-g)':'var(--red-g)') + ';color:' + (isOk?'var(--grn)':'var(--red)') + '">' + h.result.toUpperCase() + '</span>';
+    }
+    html += '<div class="log-item"><div class="log-badge" style="background:'+m.bg+';color:'+m.clr+'">'+emoji+'</div><div style="flex:1"><div class="log-val">'+h.value+resBadge+'</div><div class="log-ts">'+h.ts+' • <span class="log-mode-badge" style="background:var(--border)">'+h.mode.replace('_',' ').toUpperCase()+'</span></div></div></div>';
+  });
+  w.innerHTML = html;
+}
+
+function updateProf() {
+  document.getElementById('p-av').textContent = S.child.charAt(0).toUpperCase() || 'A';
+  document.getElementById('p-name').textContent = S.child || '—';
+  document.getElementById('p-par').textContent = S.parent || '—';
+  document.getElementById('ef-child').value = S.child;
+  document.getElementById('ef-par').value = S.parent;
+}
+
+function saveProf() {
+  var c = document.getElementById('ef-child').value.trim();
+  var p = document.getElementById('ef-par').value.trim();
+  if(c) S.child = c;
+  if(p) S.parent = p;
+  ls('user', {child: S.child, parent: S.parent});
+  updateProf();
+  document.getElementById('h-name').textContent = S.child;
+  var ok = document.getElementById('save-ok');
+  ok.style.display = 'block';
+  setTimeout(function(){ok.style.display='none';}, 2000);
+}
+
+function clearAll() {
+  if(confirm('Hapus semua data secara permanen?')) {
+    localStorage.clear();
+    location.reload();
+  }
+}
+
+function exportCSV() {
+  var csv = 'Waktu,Mode,Nilai,Hasil\n';
+  S.hist.forEach(function(h) {
+    csv += h.ts + ',' + h.mode + ',' + h.value + ',' + h.result + '\n';
+  });
+  var blob = new Blob([csv], { type: 'text/csv' });
+  var url = window.URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'numora_log.csv';
+  a.click();
+}
+</script>
+</body>
+</html>
