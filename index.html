@@ -420,8 +420,6 @@ body.light .device-cell{background:rgba(0,0,0,.05)}
             <div class="device-name" id="device-name">NUMORA BLE</div>
             <div class="device-rssi">Bluetooth Low Energy • Terhubung ✓</div>
           </div>
-          <button class="btn-disconnect" id="btn-web-audio" style="margin-right:6px" onclick="toggleWebAudio()">🔊 Suara Web: ON</button>
-          <button class="btn-disconnect" style="margin-right:6px" onclick="playWebAudio(19)">▶ Tes Suara</button>
           <button class="btn-disconnect" onclick="disconnectBLE()">Putus</button>
         </div>
         <div class="device-grid">
@@ -778,7 +776,6 @@ function playWebAudio(n){
   var now=Date.now();
   if(n===lastWebAudioN&&now-lastWebAudioT<1200&&n!==19) return; // abaikan duplikat (status + sensor)
   lastWebAudioN=n;lastWebAudioT=now;
-  toast('🔔 Event audio #'+n+(webAudioOn?'':' (web mute)'),'info',1500);
   if(!webAudioOn) return;
   try{
     if(webAudioCur){webAudioCur.pause();}
