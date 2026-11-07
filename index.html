@@ -420,6 +420,7 @@ body.light .device-cell{background:rgba(0,0,0,.05)}
             <div class="device-name" id="device-name">NUMORA BLE</div>
             <div class="device-rssi">Bluetooth Low Energy • Terhubung ✓</div>
           </div>
+          <button class="btn-disconnect" id="btn-web-audio" style="margin-right:6px" onclick="toggleWebAudio()">🔊 Suara Web: ON</button>
           <button class="btn-disconnect" onclick="disconnectBLE()">Putus</button>
         </div>
         <div class="device-grid">
@@ -764,6 +765,29 @@ function renderNumUI(n){
   confetti();
 }
 
+// ===== AUDIO WEB (sinkron dengan DFPlayer di alat) =====
+// File: audio/001.mp3 ... audio/036.mp3 (nomor = nomor track di SD card)
+var webAudioOn=true,webAudioCur=null,webAudioCache={};
+function audioSrc(n){return 'audio/'+String(n).padStart(3,'0')+'.mp3';}
+function unlockWebAudio(){ // dipanggil dari klik pengguna agar browser mengizinkan autoplay
+  try{var a=new Audio();a.muted=true;var p=a.play();if(p&&p.catch)p.catch(function(){});}catch(e){}
+}
+function playWebAudio(n){
+  if(!webAudioOn) return;
+  try{
+    if(webAudioCur){webAudioCur.pause();}
+    var a=webAudioCache[n]||(webAudioCache[n]=new Audio(audioSrc(n)));
+    a.currentTime=0;webAudioCur=a;
+    var p=a.play();if(p&&p.catch)p.catch(function(){});
+  }catch(e){}
+}
+function toggleWebAudio(){
+  webAudioOn=!webAudioOn;
+  if(!webAudioOn&&webAudioCur)webAudioCur.pause();
+  var b=document.getElementById('btn-web-audio');
+  if(b)b.textContent=webAudioOn?'🔊 Suara Web: ON':'🔇 Suara Web: OFF';
+}
+
 function handleData(d){
   if(!S.running) return;
   var ts=new Date().toLocaleTimeString('id-ID');
@@ -839,6 +863,7 @@ function handleStatus(d){
 async function connectBLE(){
   if(!navigator.bluetooth){toast('Browser tidak mendukung BLE!','err',4000);return;}
   if(bleConnected){toast('Sudah terhubung!','info');return;}
+  unlockWebAudio();
   setBleUI('scanning');document.getElementById('ble-status-bar').textContent='Mencari NUMORA BLE...';
   try{
     bleDevice=await navigator.bluetooth.requestDevice({filters:[{name:'NUMORA BLE'}],optionalServices:[SERVICE_UUID]});
@@ -856,7 +881,9 @@ async function connectBLE(){
     var charStatus=await service.getCharacteristic(CHAR_STATUS_UUID);
     await charStatus.startNotifications();
     charStatus.addEventListener('characteristicvaluechanged',function(e){
-      try{var d=JSON.parse(new TextDecoder().decode(e.target.value));handleStatus(d);}catch(err){}
+      try{var d=JSON.parse(new TextDecoder().decode(e.target.value));
+        if(d.audio!==undefined){playWebAudio(d.audio);return;}
+        handleStatus(d);}catch(err){}
     });
 
     charCmd=await service.getCharacteristic(CHAR_CMD_UUID);
