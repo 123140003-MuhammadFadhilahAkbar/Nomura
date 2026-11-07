@@ -773,7 +773,11 @@ function audioSrc(n){return 'audio/'+String(n).padStart(3,'0')+'.mp3';}
 function unlockWebAudio(){ // dipanggil dari klik pengguna agar browser mengizinkan autoplay
   try{var a=new Audio();a.muted=true;var p=a.play();if(p&&p.catch)p.catch(function(){});}catch(e){}
 }
+var lastWebAudioN=null,lastWebAudioT=0;
 function playWebAudio(n){
+  var now=Date.now();
+  if(n===lastWebAudioN&&now-lastWebAudioT<1200&&n!==19) return; // abaikan duplikat (status + sensor)
+  lastWebAudioN=n;lastWebAudioT=now;
   toast('🔔 Event audio #'+n+(webAudioOn?'':' (web mute)'),'info',1500);
   if(!webAudioOn) return;
   try{
@@ -889,7 +893,7 @@ async function connectBLE(){
     var charSensor=await service.getCharacteristic(CHAR_SENSOR_UUID);
     await charSensor.startNotifications();
     charSensor.addEventListener('characteristicvaluechanged',function(e){
-      try{var raw=new TextDecoder().decode(e.target.value);dbgLog('SENSOR '+raw);var d=JSON.parse(raw);handleData(d);}catch(err){}
+      try{var raw=new TextDecoder().decode(e.target.value);dbgLog('SENSOR '+raw);var d=JSON.parse(raw);if(d.audio!==undefined)playWebAudio(d.audio);handleData(d);}catch(err){}
     });
 
     var charStatus=await service.getCharacteristic(CHAR_STATUS_UUID);
