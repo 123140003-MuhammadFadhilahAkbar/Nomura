@@ -793,8 +793,7 @@ function dbgLog(t){
     document.body.appendChild(el);}
   dbgLines.unshift(new Date().toLocaleTimeString('id-ID')+' '+t);
   if(dbgLines.length>8)dbgLines.pop();
-  el.textContent=dbgLines.join('
-');el.style.whiteSpace='pre';
+  el.textContent=dbgLines.join(String.fromCharCode(10));el.style.whiteSpace='pre';
 }
 function toggleWebAudio(){
   webAudioOn=!webAudioOn;
