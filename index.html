@@ -784,6 +784,18 @@ function playWebAudio(n){
     if(p&&p.catch)p.catch(function(e){toast('Audio gagal: '+e.name,'err',3000);});
   }catch(e){toast('Audio error: '+e.message,'err',3000);}
 }
+var dbgLines=[];
+function dbgLog(t){
+  if(location.search.indexOf('debug')<0) return;
+  var el=document.getElementById('dbg-panel');
+  if(!el){el=document.createElement('div');el.id='dbg-panel';
+    el.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:99999;background:rgba(0,0,0,.85);color:#0f0;font:10px monospace;padding:4px 6px;max-height:30vh;overflow:hidden;pointer-events:none';
+    document.body.appendChild(el);}
+  dbgLines.unshift(new Date().toLocaleTimeString('id-ID')+' '+t);
+  if(dbgLines.length>8)dbgLines.pop();
+  el.textContent=dbgLines.join('
+');el.style.whiteSpace='pre';
+}
 function toggleWebAudio(){
   webAudioOn=!webAudioOn;
   if(!webAudioOn&&webAudioCur)webAudioCur.pause();
@@ -878,13 +890,13 @@ async function connectBLE(){
     var charSensor=await service.getCharacteristic(CHAR_SENSOR_UUID);
     await charSensor.startNotifications();
     charSensor.addEventListener('characteristicvaluechanged',function(e){
-      try{var d=JSON.parse(new TextDecoder().decode(e.target.value));handleData(d);}catch(err){}
+      try{var raw=new TextDecoder().decode(e.target.value);dbgLog('SENSOR '+raw);var d=JSON.parse(raw);handleData(d);}catch(err){}
     });
 
     var charStatus=await service.getCharacteristic(CHAR_STATUS_UUID);
     await charStatus.startNotifications();
     charStatus.addEventListener('characteristicvaluechanged',function(e){
-      try{var d=JSON.parse(new TextDecoder().decode(e.target.value));
+      try{var raw=new TextDecoder().decode(e.target.value);dbgLog('STATUS '+raw);var d=JSON.parse(raw);
         if(d.audio!==undefined){playWebAudio(d.audio);return;}
         handleStatus(d);}catch(err){}
     });
